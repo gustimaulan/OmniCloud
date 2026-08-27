@@ -1,11 +1,10 @@
 import { randomUUID } from 'crypto';
 import { google } from 'googleapis';
-import { env } from '../config/env.js';
+import { getRedirectUri, env } from '../config/env.js';
 import { upsertCloudAccount } from './accountService.js';
 import { syncAccount } from './syncService.js';
 
 const oauthStates = new Map();
-
 
 function readGoogleCredentials() {
 	if (!env.googleClientId || !env.googleClientSecret) {
@@ -18,9 +17,9 @@ function readGoogleCredentials() {
 	};
 }
 
-function createOAuthClient() {
+function createOAuthClient(redirectUri) {
 	const config = readGoogleCredentials();
-	return new google.auth.OAuth2(config.client_id, config.client_secret, env.googleRedirectUri);
+	return new google.auth.OAuth2(config.client_id, config.client_secret, redirectUri || env.googleRedirectUri);
 }
 
 async function fetchDriveProfile(oauthClient) {
@@ -40,17 +39,19 @@ async function fetchDriveProfile(oauthClient) {
 	};
 }
 
-export function getGoogleIntegrationStatus() {
+export function getGoogleIntegrationStatus(req) {
+	const redirectUri = getRedirectUri(req, 'google');
 	return {
 		configured: Boolean(env.googleClientId && env.googleClientSecret),
-		redirectUri: env.googleRedirectUri,
+		redirectUri,
 	};
 }
 
-export function createGoogleAuthorizationRequest(userId) {
-	const oauthClient = createOAuthClient();
+export function createGoogleAuthorizationRequest(userId, req) {
+	const redirectUri = getRedirectUri(req, 'google');
+	const oauthClient = createOAuthClient(redirectUri);
 	const state = randomUUID();
-	oauthStates.set(state, { userId, createdAt: Date.now() });
+	oauthStates.set(state, { userId, redirectUri, createdAt: Date.now() });
 
 	const authorizationUrl = oauthClient.generateAuthUrl({
 		access_type: 'offline',
@@ -68,11 +69,11 @@ export function createGoogleAuthorizationRequest(userId) {
 	return {
 		authorizationUrl,
 		state,
-		redirectUri: env.googleRedirectUri,
+		redirectUri,
 	};
 }
 
-export async function completeGoogleAccountLink({ code, state }) {
+export async function completeGoogleAccountLink({ code, state }, req) {
 	if (!code || !state) {
 		throw new Error('Missing Google OAuth code or state');
 	}
@@ -84,7 +85,8 @@ export async function completeGoogleAccountLink({ code, state }) {
 
 	oauthStates.delete(state);
 
-	const oauthClient = createOAuthClient();
+	const redirectUri = authState.redirectUri || getRedirectUri(req, 'google');
+	const oauthClient = createOAuthClient(redirectUri);
 	const { tokens } = await oauthClient.getToken(code);
 	oauthClient.setCredentials(tokens);
 

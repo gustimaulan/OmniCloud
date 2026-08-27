@@ -42,20 +42,20 @@ router.get('/accounts', (req, res) => {
 	res.json({ data: accounts });
 });
 
-router.get('/accounts/google/status', (_req, res) => {
-	res.json({ data: getGoogleIntegrationStatus() });
+router.get('/accounts/google/status', (req, res) => {
+	res.json({ data: getGoogleIntegrationStatus(req) });
 });
 
-router.get('/accounts/onedrive/status', (_req, res) => {
-	res.json({ data: getOneDriveIntegrationStatus() });
+router.get('/accounts/onedrive/status', (req, res) => {
+	res.json({ data: getOneDriveIntegrationStatus(req) });
 });
 
-router.get('/accounts/dropbox/status', (_req, res) => {
-	res.json({ data: getDropboxIntegrationStatus() });
+router.get('/accounts/dropbox/status', (req, res) => {
+	res.json({ data: getDropboxIntegrationStatus(req) });
 });
 
-router.get('/accounts/yandex/status', (_req, res) => {
-	res.json({ data: getYandexIntegrationStatus() });
+router.get('/accounts/yandex/status', (req, res) => {
+	res.json({ data: getYandexIntegrationStatus(req) });
 });
 
 router.get('/accounts/mega/status', (_req, res) => {
@@ -64,7 +64,7 @@ router.get('/accounts/mega/status', (_req, res) => {
 
 router.get('/accounts/google/connect', (req, res, next) => {
 	try {
-		const data = createGoogleAuthorizationRequest(req.user.id);
+		const data = createGoogleAuthorizationRequest(req.user.id, req);
 		res.json({ data });
 	} catch (error) {
 		next(error);
@@ -73,7 +73,7 @@ router.get('/accounts/google/connect', (req, res, next) => {
 
 router.get('/accounts/onedrive/connect', (req, res, next) => {
 	try {
-		const data = createOneDriveAuthorizationRequest(req.user.id);
+		const data = createOneDriveAuthorizationRequest(req.user.id, req);
 		res.json({ data });
 	} catch (error) {
 		next(error);
@@ -82,7 +82,7 @@ router.get('/accounts/onedrive/connect', (req, res, next) => {
 
 router.get('/accounts/dropbox/connect', (req, res, next) => {
 	try {
-		const data = createDropboxAuthorizationRequest(req.user.id);
+		const data = createDropboxAuthorizationRequest(req.user.id, req);
 		res.json({ data });
 	} catch (error) {
 		next(error);
@@ -118,7 +118,7 @@ router.post('/accounts/pcloud/connect', async (req, res, next) => {
 
 router.get('/accounts/yandex/connect', (req, res, next) => {
 	try {
-		const data = createYandexAuthorizationRequest(req.user.id);
+		const data = createYandexAuthorizationRequest(req.user.id, req);
 		res.json({ data });
 	} catch (error) {
 		next(error);
@@ -138,7 +138,7 @@ router.get('/accounts/google/callback', async (req, res) => {
 			return res.redirect(frontendUrl.toString());
 		}
 
-		await completeGoogleAccountLink({ code: String(code || ''), state: String(state || '') });
+		await completeGoogleAccountLink({ code: String(code || ''), state: String(state || '') }, req);
 		frontendUrl.searchParams.set('google', 'connected');
 		return res.redirect(frontendUrl.toString());
 	} catch (error) {

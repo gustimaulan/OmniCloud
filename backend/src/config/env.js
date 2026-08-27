@@ -16,15 +16,36 @@ const encryptionKey = crypto.createHash('sha256').update(derivedKeyMaterial).dig
 const rawFrontendUrl = process.env.FRONTEND_URL || process.env.CORS_ORIGIN || 'http://localhost:5173';
 const frontendUrl = rawFrontendUrl.replace(/\/+$/, '');
 
-function resolveRedirectUri(envVar, providerPath) {
+export function getRedirectUri(req, providerPath) {
+	const envKey = `${providerPath.toUpperCase()}_REDIRECT_URI`;
+	const envVar = process.env[envKey];
+
+	let baseUrl = '';
+	if (process.env.FRONTEND_URL && process.env.FRONTEND_URL.trim() && !process.env.FRONTEND_URL.includes('localhost')) {
+		baseUrl = process.env.FRONTEND_URL.trim().replace(/\/+$/, '');
+	} else if (req) {
+		const rawProto = (req.headers && req.headers['x-forwarded-proto']) || req.protocol || 'http';
+		const proto = String(rawProto).split(',')[0].trim();
+		const rawHost = (req.headers && (req.headers['x-forwarded-host'] || req.headers.host)) || '';
+		const host = String(rawHost).split(',')[0].trim();
+		if (host && !host.includes('localhost') && !host.includes('127.0.0.1')) {
+			baseUrl = `${proto}://${host}`.replace(/\/+$/, '');
+		}
+	}
+
+	if (!baseUrl) {
+		baseUrl = frontendUrl;
+	}
+
 	if (envVar && envVar.trim()) {
 		const val = envVar.trim();
-		if (val.includes('localhost') && !frontendUrl.includes('localhost')) {
-			return `${frontendUrl}/api/accounts/${providerPath}/callback`;
+		if (val.includes('localhost') && !baseUrl.includes('localhost')) {
+			return `${baseUrl}/api/accounts/${providerPath}/callback`;
 		}
 		return val;
 	}
-	return `${frontendUrl}/api/accounts/${providerPath}/callback`;
+
+	return `${baseUrl}/api/accounts/${providerPath}/callback`;
 }
 
 export const env = {
@@ -39,17 +60,17 @@ export const env = {
 	frontendUrl,
 	googleClientId: process.env.GOOGLE_CLIENT_ID || '',
 	googleClientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
-	googleRedirectUri: resolveRedirectUri(process.env.GOOGLE_REDIRECT_URI, 'google'),
+	googleRedirectUri: getRedirectUri(null, 'google'),
 	onedriveClientId: process.env.ONEDRIVE_CLIENT_ID || '',
 	onedriveClientSecret: process.env.ONEDRIVE_CLIENT_SECRET || '',
 	onedriveTenantId: process.env.ONEDRIVE_TENANT_ID || 'common',
-	onedriveRedirectUri: resolveRedirectUri(process.env.ONEDRIVE_REDIRECT_URI, 'onedrive'),
+	onedriveRedirectUri: getRedirectUri(null, 'onedrive'),
 	dropboxClientId: process.env.DROPBOX_CLIENT_ID || '',
 	dropboxClientSecret: process.env.DROPBOX_CLIENT_SECRET || '',
-	dropboxRedirectUri: resolveRedirectUri(process.env.DROPBOX_REDIRECT_URI, 'dropbox'),
+	dropboxRedirectUri: getRedirectUri(null, 'dropbox'),
 	yandexClientId: process.env.YANDEX_CLIENT_ID || '',
 	yandexClientSecret: process.env.YANDEX_CLIENT_SECRET || '',
-	yandexRedirectUri: resolveRedirectUri(process.env.YANDEX_REDIRECT_URI, 'yandex'),
+	yandexRedirectUri: getRedirectUri(null, 'yandex'),
 };
 
 export function redactEnv() {
