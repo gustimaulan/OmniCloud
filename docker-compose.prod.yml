@@ -1,0 +1,43 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    env_file:
+      - path: backend/.env
+        required: false # 👈 Prevents error if .env is missing in Dokploy
+    environment:
+      - PORT=${PORT:-8787}
+      - DATABASE_PATH=/app/data/omnicloud.db
+      - APP_MODE=${APP_MODE:-hosted}
+      - CORS_ORIGIN=${CORS_ORIGIN:-http://localhost:8080}
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:8080}
+      - AUTH_SECRET=${AUTH_SECRET}
+      - OMNICLOUD_SECRET_HALF=${OMNICLOUD_SECRET_HALF}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - GOOGLE_REDIRECT_URI=${GOOGLE_REDIRECT_URI:-http://localhost:8080/api/accounts/google/callback}
+      - ONEDRIVE_CLIENT_ID=${ONEDRIVE_CLIENT_ID}
+      - ONEDRIVE_CLIENT_SECRET=${ONEDRIVE_CLIENT_SECRET}
+      - ONEDRIVE_TENANT_ID=${ONEDRIVE_TENANT_ID:-common}
+      - ONEDRIVE_REDIRECT_URI=${ONEDRIVE_REDIRECT_URI:-http://localhost:8080/api/accounts/onedrive/callback}
+      - DROPBOX_CLIENT_ID=${DROPBOX_CLIENT_ID}
+      - DROPBOX_CLIENT_SECRET=${DROPBOX_CLIENT_SECRET}
+      - DROPBOX_REDIRECT_URI=${DROPBOX_REDIRECT_URI:-http://localhost:8080/api/accounts/dropbox/callback}
+      - YANDEX_CLIENT_ID=${YANDEX_CLIENT_ID}
+      - YANDEX_CLIENT_SECRET=${YANDEX_CLIENT_SECRET}
+      - YANDEX_REDIRECT_URI=${YANDEX_REDIRECT_URI:-http://localhost:8080/api/accounts/yandex/callback}
+    volumes:
+      - omnicloud_api_data:/app/data
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    ports:
+      - "8080:80"
+    restart: unless-stopped
+
+volumes:
+  omnicloud_api_data:
