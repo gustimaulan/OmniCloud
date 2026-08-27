@@ -16,6 +16,17 @@ const encryptionKey = crypto.createHash('sha256').update(derivedKeyMaterial).dig
 const rawFrontendUrl = process.env.FRONTEND_URL || process.env.CORS_ORIGIN || 'http://localhost:5173';
 const frontendUrl = rawFrontendUrl.replace(/\/+$/, '');
 
+function resolveRedirectUri(envVar, providerPath) {
+	if (envVar && envVar.trim()) {
+		const val = envVar.trim();
+		if (val.includes('localhost') && !frontendUrl.includes('localhost')) {
+			return `${frontendUrl}/api/accounts/${providerPath}/callback`;
+		}
+		return val;
+	}
+	return `${frontendUrl}/api/accounts/${providerPath}/callback`;
+}
+
 export const env = {
 	port: Number(process.env.PORT || 8787),
 	appMode: process.env.APP_MODE === 'hosted' ? 'hosted' : 'local',
@@ -28,21 +39,17 @@ export const env = {
 	frontendUrl,
 	googleClientId: process.env.GOOGLE_CLIENT_ID || '',
 	googleClientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
-	googleRedirectUri:
-		process.env.GOOGLE_REDIRECT_URI || `${frontendUrl}/api/accounts/google/callback`,
+	googleRedirectUri: resolveRedirectUri(process.env.GOOGLE_REDIRECT_URI, 'google'),
 	onedriveClientId: process.env.ONEDRIVE_CLIENT_ID || '',
 	onedriveClientSecret: process.env.ONEDRIVE_CLIENT_SECRET || '',
 	onedriveTenantId: process.env.ONEDRIVE_TENANT_ID || 'common',
-	onedriveRedirectUri:
-		process.env.ONEDRIVE_REDIRECT_URI || `${frontendUrl}/api/accounts/onedrive/callback`,
+	onedriveRedirectUri: resolveRedirectUri(process.env.ONEDRIVE_REDIRECT_URI, 'onedrive'),
 	dropboxClientId: process.env.DROPBOX_CLIENT_ID || '',
 	dropboxClientSecret: process.env.DROPBOX_CLIENT_SECRET || '',
-	dropboxRedirectUri:
-		process.env.DROPBOX_REDIRECT_URI || `${frontendUrl}/api/accounts/dropbox/callback`,
+	dropboxRedirectUri: resolveRedirectUri(process.env.DROPBOX_REDIRECT_URI, 'dropbox'),
 	yandexClientId: process.env.YANDEX_CLIENT_ID || '',
 	yandexClientSecret: process.env.YANDEX_CLIENT_SECRET || '',
-	yandexRedirectUri:
-		process.env.YANDEX_REDIRECT_URI || `${frontendUrl}/api/accounts/yandex/callback`,
+	yandexRedirectUri: resolveRedirectUri(process.env.YANDEX_REDIRECT_URI, 'yandex'),
 };
 
 export function redactEnv() {
